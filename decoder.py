@@ -1,35 +1,88 @@
 from heap import Heap 
 import sys
-from math import log
+from math import log, fabs
 import copy
+
+def levenshtein(seq1, seq2):
+    oneago = None
+    thisrow = range(1, len(seq2) + 1) + [0]
+    for x in xrange(len(seq1)):
+        twoago, oneago, thisrow = oneago, thisrow, [0] * len(seq2) + [x + 1]
+        for y in xrange(len(seq2)):
+            delcost = oneago[y] + 1
+            addcost = thisrow[y - 1] + 1
+            subcost = oneago[y - 1] + (seq1[x] != seq2[y])
+            thisrow[y] = min(delcost, addcost, subcost)
+    return thisrow[len(seq2) - 1]
+
 
 
 class phrase_table:
-    def __init__(self, filename):
+    def __init__(self, filename, out_source):
         self.phrase_table_file = open(filename, "r")
-        #self.generate_phrases()
-        #exit(-1)
-        self.phrase_table = self.parse_file()
+        self.phrase_table = self.generate_phrases(out_source=out_source)
+        
+        count = 0
+        for i in self.phrase_table:
+            count += len(i)
+        print count
+
+    def similarity_measure(self, string1, string2):
+        return levenshtein(string1, string2)
     
-    def generate_phrases(self):
+    def generate_phrases(self, out_source):
         line = self.phrase_table_file.readline()
         words = line[:-1].split(' ||| ')
         source = list(words[0])
         target = list(words[1])
-        print source, target
+        out_source = list(out_source)
+        #print source, target, out_source
         phrase_table = {}
-        
-    def parse_file(self):
-        phrase_table = {}
-        for line in self.phrase_table_file:
-            splits = line[:-1].split(' ||| ')
-            if phrase_table.has_key(splits[0]):
-                phrase_table[splits[0]].append((splits[1], splits[2]))
+        n = 3 #for n-gram
+        alpha = 0.5 
+        all_words = self.generate_all_words()
+        for i in range(0, len(source)):
+            if i-n < 0:
+                k = 0
             else:
-                phrase_table[splits[0]] = []
-                phrase_table[splits[0]].append((splits[1], splits[2]))
+                k = i-n
+            #generating n-grams for source
+            for p in range(k, i+1):
+                n_gram_s = " ".join(source[p:i+1]) 
+                #print " ".join(n_gram)
+                
+                for j in range(0, len(target)):
+                    if j-n < 0:
+                        u = 0
+                    else:
+                        u = j-n
+                    #generating n-grams for target
+                    for v in range(u, j+1):
+                        n_gram_t = " ".join(target[v:j+1]) 
+                        sim_measure = self.similarity_measure(string1=n_gram_t.replace(" ",""), string2=n_gram_s.replace(" ",""))
+                        #print n_gram_t," * ", n_gram_s, sim_measure
+                        
+                        out_src_ngram = " ".join(out_source[p:i+1]) #change if lengths are not equal
+                        for word in all_words:
+                            if sim_measure == self.similarity_measure(string1=word.replace(" ",""), string2=out_src_ngram.replace(" ","")):
+                                if phrase_table.has_key(out_src_ngram):
+                                    phrase_table[out_src_ngram].append((word, pow(alpha, sim_measure + fabs(p-u))))
+                                else:
+                                    phrase_table[out_src_ngram] = []
+                                    phrase_table[out_src_ngram].append((word, pow(alpha, sim_measure + fabs(p-u))))
+
                 
         return phrase_table
+    def generate_all_words(self):
+        alphabets = list('abcdefghijklmnopqrstuvwxyz')
+        all_words = []
+        for i in range(0, len(alphabets)):
+            for j in range(0, len(alphabets)):
+                for k in range(0, len(alphabets)):
+                    all_words.append(alphabets[i]+" "+alphabets[j]+" "+alphabets[k])
+        
+        return all_words   
+        
 
 class Hypothesis:
     def __init__(self, trans_source, dest, p_Lm, p_pt, dis, stack_id, end_d):
@@ -138,7 +191,8 @@ class Decoder:
         self.stacks = {}
 
     def decode(self, source):
-        self.source = source.split(" ")
+        #self.source = source.split(" ")
+        self.source = list(source)
         self.clear_stacks()
         self.init_stacks()
         #initialing the first stack
@@ -187,24 +241,25 @@ if __name__ == '__main__':
     else:
         print >> sys.stderr, "usage:python %s phrase_table_file decoder_input beam alpha dis_limit n_best" % sys.argv[0]
         sys.exit(-1)
-    
-    pt = phrase_table(train_filename)
+   
+
+    input_source = open(decoder_input_filename, "r")
+    out_source = input_source.readline()[:-1].rstrip() 
+    pt = phrase_table(out_source=out_source, filename=train_filename)
     decoder = Decoder(pt)
-    for line in open(decoder_input_filename, "r"):
-        output = decoder.decode(line[:-1].rstrip())
-        stack = []
-        print ">>>>>>>> ", line[:-1].rstrip(), " <<<<<<<<<"
-        #print "length ",output.__len__()
-        if output.__len__() == 0:
-            print "Could not translate"
-            continue
-        while output.__len__() > 0:
-            obj = output.pop()
-            stack.append(obj)
-        
-        for i in range(0, n_best):
-            if len(stack) == 0:
-                break
-            obj = stack.pop()
-            print obj.dest
+    output = decoder.decode(out_source)
+    stack = []
+    print ">>>>>>>> ", out_source, " <<<<<<<<<"
+    #print "length ",output.__len__()
+    if output.__len__() == 0:
+        print "Could not translate"
+    while output.__len__() > 0:
+        obj = output.pop()
+        stack.append(obj)
+    
+    for i in range(0, n_best):
+        if len(stack) == 0:
+            break
+        obj = stack.pop()
+        print obj.dest, obj.get_priority()
             
