@@ -23,8 +23,9 @@ class phrase_table:
         self.phrase_table = self.generate_phrases(out_source=out_source)
         
         count = 0
-        for i in self.phrase_table:
-            count += len(i)
+        for key, value in self.phrase_table.items():
+            #print key, value
+            count += len(value)
         print count
 
     def similarity_measure(self, string1, string2):
@@ -60,33 +61,40 @@ class phrase_table:
                     for v in range(u, j+1):
                         n_gram_t = " ".join(target[v:j+1]) 
                         sim_measure = self.similarity_measure(string1=n_gram_t.replace(" ",""), string2=n_gram_s.replace(" ",""))
+                        #sim_measure = sim_measure/(len(n_gram_t)+len(n_gram_s))
                         #print n_gram_t," * ", n_gram_s, sim_measure
                         
                         out_src_ngram = " ".join(out_source[p:i+1]) #change if lengths are not equal
                         for word in all_words:
-                            if sim_measure == self.similarity_measure(string1=word.replace(" ",""), string2=out_src_ngram.replace(" ","")):
-                                if phrase_table.has_key(out_src_ngram):
-                                    phrase_table[out_src_ngram].append((word, pow(alpha, sim_measure + fabs(p-u))))
-                                else:
-                                    phrase_table[out_src_ngram] = []
-                                    phrase_table[out_src_ngram].append((word, pow(alpha, sim_measure + fabs(p-u))))
+                            if len(word) == len(n_gram_t):
+                                if sim_measure == self.similarity_measure(string1=word.replace(" ",""), string2=out_src_ngram.replace(" ","")):
+                                #if sim_measure == self.similarity_measure(string1=word.replace(" ",""), string2=out_src_ngram.replace(" ",""))/(len(word)+len(out_src_ngram)):
+                                    if phrase_table.has_key(out_src_ngram):
+                                        phrase_table[out_src_ngram].append((word, pow(alpha, sim_measure/(len(word)+len(out_src_ngram)) + fabs(p-u))))
+                                    else:
+                                        phrase_table[out_src_ngram] = []
+                                        phrase_table[out_src_ngram].append((word, pow(alpha, sim_measure/(len(word)+len(out_src_ngram)) + fabs(p-u))))
 
                 
         return phrase_table
+
     def generate_all_words(self):
         alphabets = list('abcdefghijklmnopqrstuvwxyz')
         all_words = []
         for i in range(0, len(alphabets)):
             for j in range(0, len(alphabets)):
                 for k in range(0, len(alphabets)):
-                    all_words.append(alphabets[i]+" "+alphabets[j]+" "+alphabets[k])
+                    possible_word=(alphabets[i]+" "+alphabets[j]+" "+alphabets[k]).replace(" ","")
+                    if possible_word is not "":
+                        all_words.append(alphabets[i]+" "+alphabets[j]+" "+alphabets[k])
         
         return all_words   
         
 
 class Hypothesis:
     def __init__(self, trans_source, dest, p_Lm, p_pt, dis, stack_id, end_d):
-        self.p_Lm = pow( 10,float(p_Lm))
+        #self.p_Lm = pow( 10,float(p_Lm))
+        self.p_Lm = float(p_Lm)
         self.p_pt = float(p_pt)
         self.dis = float(dis)
         self.dest = copy.deepcopy(dest)
