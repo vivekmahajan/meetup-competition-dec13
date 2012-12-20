@@ -269,5 +269,5 @@ if __name__ == '__main__':
         if len(stack) == 0:
             break
         obj = stack.pop()
-        print obj.dest, obj.get_priority()
+        print obj.dest
             
