@@ -52,15 +52,15 @@ But normally in case of statistical phrase based translation system, we have a b
 In my case, I used the rule and the "untranslated" source string to produce the required phrase table. One assumption I made while implementing the algorithm is that the two source string would be of same length. However, 
 if we can align the two strings somehow, the algorithm can be modified easily.
 
-e.g  a b c -> a b d
-     x y c ->  ?
+e.g  a b c -> a b d  
+     x y c ->  ?  
 for generating phrase table, I will take all possible uni-gram, bi-gram, tri-gram from left hand side and will try to map it to the n-grams on the right hand side. 
 In this case, I will try to map  a, b, c, ab, bc, abc to a, b, d, ab, bd, abd. For each possible translation pair, I will calculate some similarity measure and will use that to find the 
 possible translation for the corresponding n-gram in x y z.
 
 so suppose one possible translation pair is a -> a b (edit distance = 1). So I will find possible translations for x -> ? which are 1 edit distance away from x. The search space will be
-all possible n-grams you can form from alphabet a-z. Now for giving scores to each translation pair, alpha^( sim_measure + diff_indexes )
-sim_measure = edit_distance/sum of length of translations (penalizing long translations)
+all possible n-grams you can form from alphabet a-z. Now for giving scores to each translation pair, alpha^( sim_measure + diff_indexes )  
+sim_measure = edit_distance/sum of length of translations (penalizing long translations)  
 diff_indexes = difference of the corresponding starting indexes of the translated phrase pair in consideration (penalizing if the translated phrase pair in consideration are relatively far away)
 
 
