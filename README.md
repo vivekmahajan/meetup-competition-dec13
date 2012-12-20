@@ -52,8 +52,8 @@ But normally in case of statistical phrase based translation system, we have a b
 In my case, I used the rule and the "untranslated" source string to produce the required phrase table. One assumption I made while implementing the algorithm is that the two source string would be of same length. However, 
 if we can align the two strings somehow, the algorithm can be modified easily.
 
-e.g  a b c -> a b d  
-     x y c ->  ?  
+e.g  if a b c -> a b d  then   x y c ->  ?  
+
 for generating phrase table, I will take all possible uni-gram, bi-gram, tri-gram from left hand side and will try to map it to the n-grams on the right hand side. 
 In this case, I will try to map  a, b, c, ab, bc, abc to a, b, d, ab, bd, abd. For each possible translation pair, I will calculate some similarity measure and will use that to find the 
 possible translation for the corresponding n-gram in x y z.
